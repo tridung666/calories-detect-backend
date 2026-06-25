@@ -23,6 +23,7 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration: ${JWT_EXPIRATION:24h}
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:7d}
 
 springdoc:
   api-docs:
