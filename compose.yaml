@@ -1,4 +1,26 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: calories-detect-backend:latest
+    container_name: calories-detect-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-calories_detect}
+      DB_USERNAME: ${POSTGRES_USER:-calories_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-calories_password}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-24h}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
   postgres:
     image: postgres:16-alpine
     container_name: calories-detect-postgres
