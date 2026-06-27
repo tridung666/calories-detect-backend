@@ -1,0 +1,12 @@
+services:
+  app:
+    image: ghcr.io/tridung666/calories-detect-backend:latest
+    container_name: calories-detect-backend
+
+    restart: unless-stopped
+
+    env_file:
+      - .prod.env
+
+    ports:
+      - "${APP_PORT:-8080}:8080"
