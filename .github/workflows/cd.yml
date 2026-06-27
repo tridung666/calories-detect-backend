@@ -102,9 +102,9 @@ jobs:
       IMAGE_REF: ghcr.io/${{ github.repository }}:sha-${{ needs.prepare.outputs.deploy_sha }}
       APP_DIR: /opt/calories-detect-backend
       APP_PORT: ${{ secrets.APP_PORT }}
-      POSTGRES_DB: ${{ secrets.DB_NAME }}
-      POSTGRES_USER: ${{ secrets.DB_USERNAME }}
-      POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_URL: ${{ secrets.DB_URL }}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       JWT_EXPIRATION: ${{ secrets.JWT_EXPIRATION }}
       JWT_REFRESH_EXPIRATION: ${{ secrets.JWT_REFRESH_EXPIRATION }}
@@ -119,18 +119,27 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT || 22 }}
-          envs: IMAGE_REF,APP_DIR,APP_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,JWT_SECRET,JWT_EXPIRATION,JWT_REFRESH_EXPIRATION,GHCR_USERNAME,GHCR_TOKEN
+          envs: IMAGE_REF,APP_DIR,APP_PORT,DB_URL,DB_USERNAME,DB_PASSWORD,JWT_SECRET,JWT_EXPIRATION,JWT_REFRESH_EXPIRATION,GHCR_USERNAME,GHCR_TOKEN
           script: |
             set -e
 
             APP_PORT="${APP_PORT:-8080}"
-            POSTGRES_DB="${POSTGRES_DB:-calories_detect}"
-            POSTGRES_USER="${POSTGRES_USER:-calories_user}"
             JWT_EXPIRATION="${JWT_EXPIRATION:-24h}"
             JWT_REFRESH_EXPIRATION="${JWT_REFRESH_EXPIRATION:-7d}"
+            export APP_PORT DB_URL DB_USERNAME DB_PASSWORD JWT_SECRET JWT_EXPIRATION JWT_REFRESH_EXPIRATION
 
-            if [ -z "$POSTGRES_PASSWORD" ]; then
-              echo "POSTGRES_PASSWORD secret is required"
+            if [ -z "$DB_URL" ]; then
+              echo "DB_URL secret is required"
+              exit 1
+            fi
+
+            if [ -z "$DB_USERNAME" ]; then
+              echo "DB_USERNAME secret is required"
+              exit 1
+            fi
+
+            if [ -z "$DB_PASSWORD" ]; then
+              echo "DB_PASSWORD secret is required"
               exit 1
             fi
 
@@ -162,9 +171,9 @@ jobs:
             umask 077
             cat > .env <<EOF
             APP_PORT=$APP_PORT
-            POSTGRES_DB=$POSTGRES_DB
-            POSTGRES_USER=$POSTGRES_USER
-            POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+            DB_URL=$DB_URL
+            DB_USERNAME=$DB_USERNAME
+            DB_PASSWORD=$DB_PASSWORD
             JWT_SECRET=$JWT_SECRET
             JWT_EXPIRATION=$JWT_EXPIRATION
             JWT_REFRESH_EXPIRATION=$JWT_REFRESH_EXPIRATION
@@ -176,44 +185,20 @@ jobs:
                 image: $IMAGE_REF
                 container_name: calories-detect-backend
                 restart: unless-stopped
-                depends_on:
-                  postgres:
-                    condition: service_healthy
                 environment:
-                  DB_HOST: postgres
-                  DB_PORT: 5432
-                  DB_NAME: \${POSTGRES_DB}
-                  DB_USERNAME: \${POSTGRES_USER}
-                  DB_PASSWORD: \${POSTGRES_PASSWORD}
+                  DB_URL: \${DB_URL}
+                  DB_USERNAME: \${DB_USERNAME}
+                  DB_PASSWORD: \${DB_PASSWORD}
                   JWT_SECRET: \${JWT_SECRET}
                   JWT_EXPIRATION: \${JWT_EXPIRATION}
                   JWT_REFRESH_EXPIRATION: \${JWT_REFRESH_EXPIRATION}
                 ports:
                   - "\${APP_PORT}:8080"
-
-              postgres:
-                image: postgres:16-alpine
-                container_name: calories-detect-postgres
-                restart: unless-stopped
-                environment:
-                  POSTGRES_DB: \${POSTGRES_DB}
-                  POSTGRES_USER: \${POSTGRES_USER}
-                  POSTGRES_PASSWORD: \${POSTGRES_PASSWORD}
-                volumes:
-                  - postgres_data:/var/lib/postgresql/data
-                healthcheck:
-                  test: ["CMD-SHELL", "pg_isready -U \$\${POSTGRES_USER} -d \$\${POSTGRES_DB}"]
-                  interval: 10s
-                  timeout: 5s
-                  retries: 5
-                  start_period: 10s
-
-            volumes:
-              postgres_data:
             EOF
 
             $DOCKER compose pull
-            $DOCKER compose up -d
+            $DOCKER compose up -d --remove-orphans
+            $DOCKER rm -f calories-detect-postgres >/dev/null 2>&1 || true
 
             for i in $(seq 1 30); do
               if curl -fsS "http://127.0.0.1:${APP_PORT}/api/health" >/dev/null; then
