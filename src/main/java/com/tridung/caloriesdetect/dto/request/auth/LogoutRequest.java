@@ -1,4 +1,4 @@
-package com.tridung.caloriesdetect.dto.request;
+package com.tridung.caloriesdetect.dto.request.auth;
 
 import jakarta.validation.constraints.NotBlank;
 

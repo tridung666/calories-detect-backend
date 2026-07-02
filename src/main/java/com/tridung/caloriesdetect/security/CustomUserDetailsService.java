@@ -1,5 +1,7 @@
 package com.tridung.caloriesdetect.security;
 
+import com.tridung.caloriesdetect.exception.AppException;
+import com.tridung.caloriesdetect.exception.ErrorCode;
 import com.tridung.caloriesdetect.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,6 +19,6 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return userRepository.findByEmailIgnoreCase(email)
                 .map(CustomUserDetails::new)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 }

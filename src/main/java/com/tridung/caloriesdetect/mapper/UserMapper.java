@@ -1,7 +1,9 @@
 package com.tridung.caloriesdetect.mapper;
 
-import com.tridung.caloriesdetect.dto.request.RegisterRequest;
+import com.tridung.caloriesdetect.dto.request.admin.AdminUserRequest;
+import com.tridung.caloriesdetect.dto.request.auth.RegisterRequest;
 import com.tridung.caloriesdetect.dto.response.RegisterResponse;
+import com.tridung.caloriesdetect.dto.response.UserResponse;
 import com.tridung.caloriesdetect.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -24,10 +26,22 @@ public interface UserMapper {
     @Mapping(target = "status", constant = "ACTIVE")
     User toEntity(RegisterRequest request, String encodedPassword);
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "email", source = "request.email", qualifiedByName = "normalizeEmail")
+    @Mapping(target = "password", source = "encodedPassword")
+    @Mapping(target = "fullName", expression = "java(request.fullName().trim())")
+    @Mapping(target = "role", source = "request.role")
+    @Mapping(target = "status", constant = "ACTIVE")
+    User toEntity(AdminUserRequest request, String encodedPassword);
+
     RegisterResponse toRegisterResponse(User user);
 
     @Named("normalizeEmail")
     default String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }
+
+    @Mapping(target = "role", expression = "java(user.getRole().name())")
+    @Mapping(target = "status", expression = "java(user.getStatus().name())")
+    UserResponse toUserResponse(User user);
 }
