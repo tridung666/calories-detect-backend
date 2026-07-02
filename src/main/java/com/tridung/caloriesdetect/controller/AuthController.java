@@ -1,9 +1,9 @@
 package com.tridung.caloriesdetect.controller;
 
-import com.tridung.caloriesdetect.dto.request.LoginRequest;
-import com.tridung.caloriesdetect.dto.request.LogoutRequest;
-import com.tridung.caloriesdetect.dto.request.RefreshTokenRequest;
-import com.tridung.caloriesdetect.dto.request.RegisterRequest;
+import com.tridung.caloriesdetect.dto.request.auth.LoginRequest;
+import com.tridung.caloriesdetect.dto.request.auth.LogoutRequest;
+import com.tridung.caloriesdetect.dto.request.auth.RefreshTokenRequest;
+import com.tridung.caloriesdetect.dto.request.auth.RegisterRequest;
 import com.tridung.caloriesdetect.dto.response.LoginResponse;
 import com.tridung.caloriesdetect.dto.response.RegisterResponse;
 import com.tridung.caloriesdetect.service.AuthService;
@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;

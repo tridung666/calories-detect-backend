@@ -1,9 +1,9 @@
 package com.tridung.caloriesdetect.service;
 
-import com.tridung.caloriesdetect.dto.request.LoginRequest;
-import com.tridung.caloriesdetect.dto.request.LogoutRequest;
-import com.tridung.caloriesdetect.dto.request.RefreshTokenRequest;
-import com.tridung.caloriesdetect.dto.request.RegisterRequest;
+import com.tridung.caloriesdetect.dto.request.auth.LoginRequest;
+import com.tridung.caloriesdetect.dto.request.auth.LogoutRequest;
+import com.tridung.caloriesdetect.dto.request.auth.RefreshTokenRequest;
+import com.tridung.caloriesdetect.dto.request.auth.RegisterRequest;
 import com.tridung.caloriesdetect.dto.response.LoginResponse;
 import com.tridung.caloriesdetect.dto.response.RegisterResponse;
 
