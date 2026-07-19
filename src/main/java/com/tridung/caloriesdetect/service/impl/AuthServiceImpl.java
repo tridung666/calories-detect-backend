@@ -1,6 +1,7 @@
 package com.tridung.caloriesdetect.service.impl;
 
 import com.tridung.caloriesdetect.config.JwtProperties;
+import com.tridung.caloriesdetect.dto.request.auth.ChangePasswordRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LogoutRequest;
 import com.tridung.caloriesdetect.dto.request.auth.RefreshTokenRequest;
@@ -19,7 +20,10 @@ import com.tridung.caloriesdetect.security.JwtService;
 import com.tridung.caloriesdetect.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,9 +45,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        var authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
-        );
+        final var authentication = authenticate(request);
         var userDetails = (CustomUserDetails) authentication.getPrincipal();
         String accessToken = jwtService.generateToken(userDetails);
         String rawRefreshToken = jwtService.generateRefreshToken();
@@ -63,6 +65,19 @@ public class AuthServiceImpl implements AuthService {
                 "Bearer",
                 jwtService.expirationSeconds()
         );
+    }
+
+    private Authentication authenticate(LoginRequest request) {
+        try {
+            return authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
+            );
+        } catch(DisabledException exception) {
+            throw new AppException(ErrorCode.ACCOUNT_INACTIVE);
+        } catch (AuthenticationException exception) {
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
     }
 
     @Override
@@ -140,6 +155,24 @@ public class AuthServiceImpl implements AuthService {
         oldRefreshToken.setRevokedAt(LocalDateTime.now());
 
         refreshTokenRepository.save(oldRefreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
+            throw new AppException(ErrorCode.OLD_PASSWORD_NOT_MATCH);
+        }
+
+        if(!request.newPassword().equals(request.confirmNewPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
     }
 
 }

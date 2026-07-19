@@ -1,5 +1,6 @@
 package com.tridung.caloriesdetect.service;
 
+import com.tridung.caloriesdetect.dto.request.auth.ChangePasswordRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LogoutRequest;
 import com.tridung.caloriesdetect.dto.request.auth.RefreshTokenRequest;
@@ -16,4 +17,6 @@ public interface AuthService {
     LoginResponse refreshToken(RefreshTokenRequest request);
 
     void logout(LogoutRequest request);
+
+    void changePassword(Long userId, ChangePasswordRequest request);
 }
