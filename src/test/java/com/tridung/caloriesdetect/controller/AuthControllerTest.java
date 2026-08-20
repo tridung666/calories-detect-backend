@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tridung.caloriesdetect.common.enums.UserRole;
 import com.tridung.caloriesdetect.common.enums.UserStatus;
 import com.tridung.caloriesdetect.dto.request.auth.ChangePasswordRequest;
+import com.tridung.caloriesdetect.dto.request.auth.GoogleLoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LogoutRequest;
 import com.tridung.caloriesdetect.dto.request.auth.RefreshTokenRequest;
@@ -86,6 +87,34 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void loginWithGoogle_shouldReturnLoginResponse() throws Exception {
+        GoogleLoginRequest request = new GoogleLoginRequest("google-id-token");
+        LoginResponse response = new LoginResponse(
+                "access-token", "refresh-token", "Bearer", 900L
+        );
+
+        when(authService.loginWithGoogle(request)).thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.data.refreshToken").value("refresh-token"));
+
+        verify(authService).loginWithGoogle(request);
+    }
+
+    @Test
+    void loginWithGoogle_shouldRejectBlankIdToken() throws Exception {
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idToken\":\"\"}"))
                 .andExpect(status().isBadRequest());
     }
 

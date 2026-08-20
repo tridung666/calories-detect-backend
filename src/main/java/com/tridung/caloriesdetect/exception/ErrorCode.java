@@ -15,6 +15,7 @@ public enum ErrorCode {
     INVALID_CREDENTIALS(11001, "Invalid email or password"),
     OLD_PASSWORD_NOT_MATCH(11002, "Old password not match"),
     PASSWORD_CONFIRM_NOT_MATCH(11003, "Password does not match"),
+    INVALID_GOOGLE_TOKEN(11004, "Invalid Google ID token"),
 
     // Access Token
     INVALID_TOKEN(12000, "Invalid token"),

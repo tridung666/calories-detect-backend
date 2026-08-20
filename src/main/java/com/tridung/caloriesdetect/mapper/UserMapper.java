@@ -19,6 +19,7 @@ import java.util.Locale;
 public interface UserMapper {
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "googleSubject", ignore = true)
     @Mapping(target = "email", source = "request.email", qualifiedByName = "normalizeEmail")
     @Mapping(target = "password", source = "encodedPassword")
     @Mapping(target = "fullName", expression = "java(request.fullName().trim())")
@@ -27,6 +28,7 @@ public interface UserMapper {
     User toEntity(RegisterRequest request, String encodedPassword);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "googleSubject", ignore = true)
     @Mapping(target = "email", source = "request.email", qualifiedByName = "normalizeEmail")
     @Mapping(target = "password", source = "encodedPassword")
     @Mapping(target = "fullName", expression = "java(request.fullName().trim())")

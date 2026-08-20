@@ -1,6 +1,7 @@
 package com.tridung.caloriesdetect.controller;
 
 import com.tridung.caloriesdetect.dto.request.auth.ChangePasswordRequest;
+import com.tridung.caloriesdetect.dto.request.auth.GoogleLoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LogoutRequest;
 import com.tridung.caloriesdetect.dto.request.auth.RefreshTokenRequest;
@@ -60,6 +61,18 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request
     ) {
         return BaseResponse.success(authService.login(request));
+    }
+
+    @PostMapping("/google")
+    @SecurityRequirements
+    @Operation(
+            summary = "Login with Google",
+            description = "Verify a Google ID token from the frontend, then return application JWT tokens"
+    )
+    public BaseResponse<LoginResponse> loginWithGoogle(
+            @Valid @RequestBody GoogleLoginRequest request
+    ) {
+        return BaseResponse.success(authService.loginWithGoogle(request));
     }
 
     @PostMapping("/refresh-token")

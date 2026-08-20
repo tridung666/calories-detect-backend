@@ -1,9 +1,12 @@
 package com.tridung.caloriesdetect.service.impl;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.tridung.caloriesdetect.common.enums.UserRole;
 import com.tridung.caloriesdetect.common.enums.UserStatus;
 import com.tridung.caloriesdetect.config.JwtProperties;
 import com.tridung.caloriesdetect.dto.request.auth.ChangePasswordRequest;
+import com.tridung.caloriesdetect.dto.request.auth.GoogleLoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LogoutRequest;
 import com.tridung.caloriesdetect.dto.request.auth.RefreshTokenRequest;
@@ -66,6 +69,9 @@ class AuthServiceImplTest {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private GoogleIdTokenVerifier googleIdTokenVerifier;
+
     private AuthServiceImpl authService;
 
     @BeforeEach
@@ -83,8 +89,78 @@ class AuthServiceImplTest {
                 refreshTokenRepository,
                 passwordEncoder,
                 userMapper,
-                jwtProperties
+                jwtProperties,
+                googleIdTokenVerifier
         );
+    }
+
+    @Test
+    void loginWithGoogle_shouldIssueTokensForExistingUser() throws Exception {
+        User user = testUser();
+        GoogleLoginRequest request = new GoogleLoginRequest("google-id-token");
+
+        stubGoogleToken("test@gmail.com", "Test User");
+        user.setGoogleSubject("google-subject");
+        when(userRepository.findByGoogleSubject("google-subject"))
+                .thenReturn(Optional.of(user));
+        stubIssuedTokens();
+
+        LoginResponse response = authService.loginWithGoogle(request);
+
+        assertThat(response.accessToken()).isEqualTo("access-token");
+        assertThat(response.refreshToken()).isEqualTo("raw-refresh-token");
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void loginWithGoogle_shouldCreateUserOnFirstLogin() throws Exception {
+        GoogleLoginRequest request = new GoogleLoginRequest("google-id-token");
+        User savedUser = User.builder()
+                .id(2L)
+                .email("new@gmail.com")
+                .password("generated-password")
+                .fullName("New User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
+
+        stubGoogleToken("new@gmail.com", "New User");
+        when(userRepository.findByGoogleSubject("google-subject"))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("new@gmail.com"))
+                .thenReturn(Optional.empty());
+        when(passwordEncoder.encode(any(String.class))).thenReturn("generated-password");
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        stubIssuedTokens();
+
+        authService.loginWithGoogle(request);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getEmail()).isEqualTo("new@gmail.com");
+        assertThat(userCaptor.getValue().getGoogleSubject()).isEqualTo("google-subject");
+        assertThat(userCaptor.getValue().getFullName()).isEqualTo("New User");
+        assertThat(userCaptor.getValue().getRole()).isEqualTo(UserRole.USER);
+        assertThat(userCaptor.getValue().getStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    private void stubIssuedTokens() {
+        when(jwtService.generateToken(any(CustomUserDetails.class))).thenReturn("access-token");
+        when(jwtService.generateRefreshToken()).thenReturn("raw-refresh-token");
+        when(jwtService.hashToken("raw-refresh-token")).thenReturn("hashed-refresh-token");
+        when(jwtService.expirationSeconds()).thenReturn(900L);
+    }
+
+    private void stubGoogleToken(String email, String fullName) throws Exception {
+        GoogleIdToken.Payload payload = new GoogleIdToken.Payload()
+                .setSubject("google-subject")
+                .setEmail(email)
+                .setEmailVerified(true);
+        payload.set("name", fullName);
+
+        GoogleIdToken googleIdToken = mock(GoogleIdToken.class);
+        when(googleIdToken.getPayload()).thenReturn(payload);
+        when(googleIdTokenVerifier.verify("google-id-token")).thenReturn(googleIdToken);
     }
 
     @Test
