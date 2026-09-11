@@ -2,8 +2,8 @@ package com.tridung.caloriesdetect.mapper;
 
 import com.tridung.caloriesdetect.dto.request.admin.AdminUserRequest;
 import com.tridung.caloriesdetect.dto.request.auth.RegisterRequest;
-import com.tridung.caloriesdetect.dto.response.RegisterResponse;
-import com.tridung.caloriesdetect.dto.response.UserResponse;
+import com.tridung.caloriesdetect.dto.response.auth.RegisterResponse;
+import com.tridung.caloriesdetect.dto.response.auth.UserResponse;
 import com.tridung.caloriesdetect.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

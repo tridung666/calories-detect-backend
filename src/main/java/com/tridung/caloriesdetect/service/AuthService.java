@@ -7,8 +7,8 @@ import com.tridung.caloriesdetect.dto.request.auth.LoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LogoutRequest;
 import com.tridung.caloriesdetect.dto.request.auth.RefreshTokenRequest;
 import com.tridung.caloriesdetect.dto.request.auth.RegisterRequest;
-import com.tridung.caloriesdetect.dto.response.LoginResponse;
-import com.tridung.caloriesdetect.dto.response.RegisterResponse;
+import com.tridung.caloriesdetect.dto.response.auth.LoginResponse;
+import com.tridung.caloriesdetect.dto.response.auth.RegisterResponse;
 
 public interface AuthService {
 

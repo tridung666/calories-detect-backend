@@ -3,7 +3,7 @@ package com.tridung.caloriesdetect.controller.admin;
 import com.tridung.caloriesdetect.common.response.BaseResponse;
 import com.tridung.caloriesdetect.common.response.PageResponse;
 import com.tridung.caloriesdetect.dto.request.admin.AdminUserRequest;
-import com.tridung.caloriesdetect.dto.response.UserResponse;
+import com.tridung.caloriesdetect.dto.response.auth.UserResponse;
 import com.tridung.caloriesdetect.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

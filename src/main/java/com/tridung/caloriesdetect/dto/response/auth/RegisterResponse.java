@@ -1,4 +1,4 @@
-package com.tridung.caloriesdetect.dto.response;
+package com.tridung.caloriesdetect.dto.response.auth;
 
 import com.tridung.caloriesdetect.common.enums.UserRole;
 import com.tridung.caloriesdetect.common.enums.UserStatus;
