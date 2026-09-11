@@ -5,6 +5,11 @@ import lombok.Getter;
 @Getter
 public enum ErrorCode {
 
+    // Meal
+    MEAL_ITEM_NOT_FOUND(14002, "Meal item not found"),
+    MEAL_NOT_FOUND(14000, "Meal not found"),
+    INVALID_MEAL_PAGINATION(14001, "pageNo must be >= 0 and pageSize must be between 1 and 100"),
+
     // User
     USER_EXISTED(10001, "Email already exists"),
     USER_NOT_FOUND(10002, "Email not found"),
