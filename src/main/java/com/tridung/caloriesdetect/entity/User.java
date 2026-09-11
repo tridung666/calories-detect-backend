@@ -20,6 +20,9 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "google_subject", unique = true)
+    private String googleSubject;
+
     @Column(nullable = false)
     private String password;
 

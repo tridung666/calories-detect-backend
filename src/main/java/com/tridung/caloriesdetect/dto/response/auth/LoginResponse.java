@@ -1,4 +1,4 @@
-package com.tridung.caloriesdetect.dto.response;
+package com.tridung.caloriesdetect.dto.response.auth;
 
 public record LoginResponse(
         String accessToken,

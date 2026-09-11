@@ -2,7 +2,7 @@ package com.tridung.caloriesdetect.service.impl;
 
 import com.tridung.caloriesdetect.common.response.PageResponse;
 import com.tridung.caloriesdetect.dto.request.admin.AdminUserRequest;
-import com.tridung.caloriesdetect.dto.response.UserResponse;
+import com.tridung.caloriesdetect.dto.response.auth.UserResponse;
 import com.tridung.caloriesdetect.entity.User;
 import com.tridung.caloriesdetect.exception.AppException;
 import com.tridung.caloriesdetect.exception.ErrorCode;

@@ -1,7 +1,7 @@
 package com.tridung.caloriesdetect.controller;
 
 import com.tridung.caloriesdetect.common.response.BaseResponse;
-import com.tridung.caloriesdetect.dto.response.UserResponse;
+import com.tridung.caloriesdetect.dto.response.auth.UserResponse;
 import com.tridung.caloriesdetect.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

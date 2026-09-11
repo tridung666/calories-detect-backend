@@ -26,6 +26,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	implementation 'com.google.api-client:google-api-client:2.9.0'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 	implementation 'org.mapstruct:mapstruct:1.6.3'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -48,4 +49,15 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+
+	testLogging {
+		events 'passed', 'failed', 'skipped'
+		exceptionFormat 'full'
+	}
+
+	afterSuite { descriptor, result ->
+		if (descriptor.parent == null) {
+			logger.lifecycle("Test results: ${result.testCount} total | ${result.successfulTestCount} passed | ${result.failedTestCount} failed | ${result.skippedTestCount} skipped")
+		}
+	}
 }
