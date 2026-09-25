@@ -4,6 +4,10 @@ import com.tridung.caloriesdetect.common.response.PageResponse;
 import com.tridung.caloriesdetect.dto.request.admin.AdminUserRequest;
 import com.tridung.caloriesdetect.dto.response.auth.UserResponse;
 import com.tridung.caloriesdetect.entity.User;
+import com.tridung.caloriesdetect.entity.AuthProvider;
+import com.tridung.caloriesdetect.common.enums.AuthProviderType;
+import com.tridung.caloriesdetect.repository.AuthProviderRepository;
+import org.springframework.transaction.annotation.Transactional;
 import com.tridung.caloriesdetect.exception.AppException;
 import com.tridung.caloriesdetect.exception.ErrorCode;
 import com.tridung.caloriesdetect.mapper.UserMapper;
@@ -20,6 +24,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final AuthProviderRepository authProviderRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -39,6 +44,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserResponse createOneUser(AdminUserRequest rq) {
         if(userRepository.existsByEmailIgnoreCase(rq.email())) {
             throw new AppException(ErrorCode.USER_EXISTED);
@@ -46,9 +52,11 @@ public class UserServiceImpl implements UserService {
 
         String encodedPassword = passwordEncoder.encode(rq.password());
 
-        User user = userMapper.toEntity(rq, encodedPassword);
+        User user = userMapper.toEntity(rq);
 
         User savedUser = userRepository.save(user);
+        authProviderRepository.save(AuthProvider.builder().user(savedUser)
+                .provider(AuthProviderType.LOCAL).passwordHash(encodedPassword).build());
 
         return userMapper.toUserResponse(savedUser);
     }

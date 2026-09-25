@@ -1,6 +1,8 @@
 package com.tridung.caloriesdetect.security;
 
 import io.jsonwebtoken.JwtException;
+import com.tridung.caloriesdetect.common.enums.UserStatus;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,7 +44,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 CustomUserDetails userDetails =
                         (CustomUserDetails) userDetailsService.loadUserByUsername(email);
 
-                if (jwtService.isTokenValid(token, userDetails)) {
+                if (userDetails.user().getStatus() == UserStatus.ACTIVE
+                        && Boolean.TRUE.equals(userDetails.user().getEmailVerified())
+                        && jwtService.isTokenValid(token, userDetails)) {
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
@@ -55,7 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
-        } catch (JwtException | IllegalArgumentException ignored) {
+        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException ignored) {
             SecurityContextHolder.clearContext();
         }
 

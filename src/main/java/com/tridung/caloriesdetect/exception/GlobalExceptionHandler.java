@@ -23,7 +23,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseResponse<Void>>  handleAppException(AppException exception) {
         ErrorCode errorCode = exception.getErrorCode();
 
-        return ResponseEntity.status(errorCode == ErrorCode.MEAL_NOT_FOUND || errorCode == ErrorCode.MEAL_ITEM_NOT_FOUND ? 404 : 400).body(BaseResponse.error(
+        int status = switch (errorCode) {
+            case MEAL_NOT_FOUND, MEAL_ITEM_NOT_FOUND -> 404;
+            case EMAIL_DELIVERY_FAILED -> 503;
+            case OTP_RATE_LIMITED -> 429;
+            case REFRESH_TOKEN_NOT_FOUND, REFRESH_TOKEN_EXPIRED, REFRESH_TOKEN_REVOKED, INVALID_REFRESH_TOKEN -> 401;
+            default -> 400;
+        };
+        return ResponseEntity.status(status).body(BaseResponse.error(
                 errorCode.getCode(),
                 errorCode.getMessage()
         ));

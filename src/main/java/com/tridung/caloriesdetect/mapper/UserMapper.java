@@ -19,22 +19,20 @@ import java.util.Locale;
 public interface UserMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "googleSubject", ignore = true)
     @Mapping(target = "email", source = "request.email", qualifiedByName = "normalizeEmail")
-    @Mapping(target = "password", source = "encodedPassword")
     @Mapping(target = "fullName", expression = "java(request.fullName().trim())")
     @Mapping(target = "role", constant = "USER")
     @Mapping(target = "status", constant = "ACTIVE")
-    User toEntity(RegisterRequest request, String encodedPassword);
+    @Mapping(target = "emailVerified", constant = "false")
+    User toEntity(RegisterRequest request);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "googleSubject", ignore = true)
     @Mapping(target = "email", source = "request.email", qualifiedByName = "normalizeEmail")
-    @Mapping(target = "password", source = "encodedPassword")
     @Mapping(target = "fullName", expression = "java(request.fullName().trim())")
     @Mapping(target = "role", source = "request.role")
     @Mapping(target = "status", constant = "ACTIVE")
-    User toEntity(AdminUserRequest request, String encodedPassword);
+    @Mapping(target = "emailVerified", constant = "false")
+    User toEntity(AdminUserRequest request);
 
     RegisterResponse toRegisterResponse(User user);
 
