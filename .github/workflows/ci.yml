@@ -7,6 +7,7 @@ on:
       - main
       - master
       - develope
+      - "feature/**"
   pull_request:
     branches:
       - main
@@ -45,6 +46,10 @@ jobs:
       JWT_EXPIRATION: 24h
       JWT_REFRESH_EXPIRATION: 7d
       GOOGLE_CLIENT_ID: test-client-id.apps.googleusercontent.com
+      MAIL_USERNAME: ci@example.invalid
+      MAIL_PASSWORD: ci-only
+      SPRING_MAIL_HOST: 127.0.0.1
+      SPRING_MAIL_PORT: 1
 
     steps:
       - name: Checkout repository
