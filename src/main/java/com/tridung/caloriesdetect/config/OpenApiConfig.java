@@ -19,12 +19,17 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Calories Detect API")
-                        .description("REST API for the Calories Detect application")
+                        .description("REST API for Calories Detect. Access JWTs use Bearer authorization; refresh tokens are only HttpOnly cookies. Fetch GET /api/auth/csrf with credentials, then send its masked token in X-XSRF-TOKEN for login, Google login, refresh and logout. Cookie names: calories_refresh locally; __Secure-calories_refresh on HTTPS production. No refresh tokens in JSON. Responses containing tokens must not be cached.")
                         .version("v1")
                         .contact(new Contact().name("Calories Detect Team"))
                 )
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
                 .components(new Components()
+                        .addSecuritySchemes("csrfHeader", new SecurityScheme().type(SecurityScheme.Type.APIKEY)
+                                .in(SecurityScheme.In.HEADER).name("X-XSRF-TOKEN"))
+                        .addSecuritySchemes("refreshCookie", new SecurityScheme().type(SecurityScheme.Type.APIKEY)
+                                .in(SecurityScheme.In.COOKIE).name("__Secure-calories_refresh")
+                                .description("HttpOnly; browser-managed. Local HTTP name: calories_refresh"))
                         .addSecuritySchemes(
                                 SECURITY_SCHEME_NAME,
                                 new SecurityScheme()
