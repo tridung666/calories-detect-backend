@@ -60,10 +60,7 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) ->
-                                response.sendError(
-                                        HttpServletResponse.SC_UNAUTHORIZED,
-                                        "Unauthorized"
-                                )
+                                writeSecurityError(response, HttpServletResponse.SC_UNAUTHORIZED, 401, "Unauthorized")
                         )
                         .accessDeniedHandler((request, response, exception) -> {
                             if (exception instanceof org.springframework.security.web.csrf.CsrfException) {
@@ -71,7 +68,7 @@ public class SecurityConfig {
                                 response.setContentType("application/json");
                                 response.getWriter().write("{\"success\":false,\"code\":40301,\"message\":\"Invalid CSRF token\"}");
                             } else {
-                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
+                                writeSecurityError(response, HttpServletResponse.SC_FORBIDDEN, 403, "Forbidden");
                             }
                         })
                 )
@@ -101,6 +98,14 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class
                 )
                 .build();
+    }
+
+    private static void writeSecurityError(HttpServletResponse response, int status, int code, String message)
+            throws java.io.IOException {
+        // sendError dispatches to /error, where authentication can replace a 403 with 401.
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"success\":false,\"code\":" + code + ",\"message\":\"" + message + "\"}");
     }
 
     @Bean
