@@ -20,12 +20,6 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "google_subject", unique = true)
-    private String googleSubject;
-
-    @Column(nullable = false)
-    private String password;
-
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
@@ -36,4 +30,8 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserStatus status;
+
+    @Builder.Default
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified = false;
 }

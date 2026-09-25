@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${purposeTitle}">Mã xác nhận Calories Detect</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f4;font-family:Arial,Helvetica,sans-serif;color:#182b24;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f4f6f4;">
+    <tr>
+        <td align="center" style="padding:32px 16px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background-color:#ffffff;border:1px solid #dce5df;border-radius:12px;">
+                <tr>
+                    <td style="padding:28px 24px 20px;border-bottom:1px solid #e6ece8;">
+                        <p style="margin:0;color:#246747;font-size:18px;line-height:26px;font-weight:bold;">Calories Detect</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:28px 24px;">
+                        <h1 style="margin:0 0 16px;font-size:24px;line-height:32px;font-weight:bold;" th:text="${purposeTitle}">Xác minh email của bạn</h1>
+                        <p style="margin:0 0 24px;font-size:16px;line-height:26px;color:#4b5d54;" th:text="${purposeDescription}">Nhập mã dưới đây trong ứng dụng để hoàn tất yêu cầu của bạn.</p>
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                                <td align="center" style="padding:22px 12px;background-color:#edf5ef;border:1px solid #cee2d4;border-radius:8px;">
+                                    <p style="margin:0 0 10px;font-size:13px;line-height:20px;color:#4b5d54;">MÃ XÁC NHẬN CỦA BẠN</p>
+                                    <p id="otp-code" style="margin:0;font-family:Consolas,'Courier New',monospace;font-size:36px;line-height:44px;font-weight:bold;letter-spacing:6px;color:#20563c;" th:text="${otp}">012345</p>
+                                </td>
+                            </tr>
+                        </table>
+                        <p style="margin:20px 0 0;font-size:15px;line-height:24px;color:#4b5d54;">Mã có hiệu lực trong <strong style="color:#182b24;"><span th:text="${expiresInMinutes}">5</span> phút</strong> và chỉ được sử dụng một lần.</p>
+                        <p style="margin:12px 0 0;font-size:14px;line-height:23px;color:#4b5d54;">Không chia sẻ mã này với bất kỳ ai. Nếu bạn không thực hiện yêu cầu, hãy bỏ qua email này.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:20px 24px;border-top:1px solid #e6ece8;">
+                        <p style="margin:0;font-size:12px;line-height:20px;color:#65756c;">Email được gửi tự động từ Calories Detect. Vui lòng không trả lời email này.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>
