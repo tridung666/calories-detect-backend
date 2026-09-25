@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tridung.caloriesdetect.common.enums.UserRole;
 import com.tridung.caloriesdetect.common.enums.UserStatus;
 import com.tridung.caloriesdetect.entity.User;
+import com.tridung.caloriesdetect.entity.AuthProvider;
+import com.tridung.caloriesdetect.repository.AuthProviderRepository;
+import com.tridung.caloriesdetect.common.enums.AuthProviderType;
+
 import com.tridung.caloriesdetect.repository.MealRepository;
 import com.tridung.caloriesdetect.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -25,18 +29,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MealItemIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired UserRepository users;
+    @Autowired AuthProviderRepository providers;
     @Autowired MealRepository meals;
     @Autowired PasswordEncoder encoder;
     private final ObjectMapper json = new ObjectMapper();
     private static final String BODY = "{\"mealType\":\"SNACK\",\"mealDate\":\"1958-06-07\"}";
 
     private User createUser() {
-        return users.saveAndFlush(User.builder().email(UUID.randomUUID()+"@example.com")
-                .password(encoder.encode("TestPassword123!")) .fullName("Meal integration test")
-                .role(UserRole.USER).status(UserStatus.ACTIVE).build());
+        User user = users.saveAndFlush(User.builder().email(UUID.randomUUID()+"@example.com")
+                 .fullName("Meal integration test")
+                .role(UserRole.USER).status(UserStatus.ACTIVE).emailVerified(true).build());
+        providers.saveAndFlush(AuthProvider.builder().user(user).provider(AuthProviderType.LOCAL)
+                .passwordHash(encoder.encode("TestPassword123!")).build());
+        return user;
     }
     private String login(User user, String previousToken) throws Exception {
-        var request = post("/api/auth/login").contentType("application/json")
+        var request = post("/api/auth/login").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json")
                 .content("{\"email\":\""+user.getEmail()+"\",\"password\":\"TestPassword123!\"}");
         if (previousToken != null) request.header("Authorization", "Bearer "+previousToken);
         String body = mvc.perform(request).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();

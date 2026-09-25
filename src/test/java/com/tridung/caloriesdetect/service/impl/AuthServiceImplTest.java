@@ -5,7 +5,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.tridung.caloriesdetect.common.enums.UserRole;
 import com.tridung.caloriesdetect.common.enums.UserStatus;
 import com.tridung.caloriesdetect.config.JwtProperties;
-import com.tridung.caloriesdetect.dto.request.auth.ChangePasswordRequest;
 import com.tridung.caloriesdetect.dto.request.auth.GoogleLoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LoginRequest;
 import com.tridung.caloriesdetect.dto.request.auth.LogoutRequest;
@@ -15,11 +14,17 @@ import com.tridung.caloriesdetect.dto.response.auth.LoginResponse;
 import com.tridung.caloriesdetect.dto.response.auth.RegisterResponse;
 import com.tridung.caloriesdetect.entity.RefreshToken;
 import com.tridung.caloriesdetect.entity.User;
+import com.tridung.caloriesdetect.entity.AuthProvider;
+import com.tridung.caloriesdetect.repository.AuthProviderRepository;
+import com.tridung.caloriesdetect.common.enums.AuthProviderType;
+
 import com.tridung.caloriesdetect.exception.AppException;
 import com.tridung.caloriesdetect.exception.ErrorCode;
 import com.tridung.caloriesdetect.mapper.UserMapper;
 import com.tridung.caloriesdetect.repository.RefreshTokenRepository;
 import com.tridung.caloriesdetect.repository.UserRepository;
+import com.tridung.caloriesdetect.security.CurrentUserProvider;
+import com.tridung.caloriesdetect.common.enums.OtpPurpose;
 import com.tridung.caloriesdetect.security.CustomUserDetails;
 import com.tridung.caloriesdetect.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +66,9 @@ class AuthServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
+    private AuthProviderRepository authProviderRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -72,6 +80,12 @@ class AuthServiceImplTest {
     @Mock
     private GoogleIdTokenVerifier googleIdTokenVerifier;
 
+    @Mock
+    private OtpService otpService;
+
+    @Mock
+    private CurrentUserProvider currentUserProvider;
+
     private AuthServiceImpl authService;
 
     @BeforeEach
@@ -82,15 +96,21 @@ class AuthServiceImplTest {
                 Duration.ofDays(7)
         );
 
+        org.mockito.Mockito.lenient().when(refreshTokenRepository.findUserIdByTokenHash(any(String.class)))
+                .thenReturn(Optional.of(1L));
+        org.mockito.Mockito.lenient().when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testUser()));
         authService = new AuthServiceImpl(
                 authenticationManager,
                 jwtService,
                 userRepository,
+                authProviderRepository,
                 refreshTokenRepository,
                 passwordEncoder,
                 userMapper,
                 jwtProperties,
-                googleIdTokenVerifier
+                googleIdTokenVerifier,
+                otpService,
+                currentUserProvider
         );
     }
 
@@ -100,9 +120,10 @@ class AuthServiceImplTest {
         GoogleLoginRequest request = new GoogleLoginRequest("google-id-token");
 
         stubGoogleToken("test@gmail.com", "Test User");
-        user.setGoogleSubject("google-subject");
-        when(userRepository.findByGoogleSubject("google-subject"))
-                .thenReturn(Optional.of(user));
+        when(authProviderRepository.findByProviderAndProviderSubject(AuthProviderType.GOOGLE, "google-subject"))
+                .thenReturn(Optional.of(AuthProvider.builder().user(user).provider(AuthProviderType.GOOGLE)
+                        .providerSubject("google-subject").build()));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         stubIssuedTokens();
 
         LoginResponse response = authService.loginWithGoogle(request);
@@ -118,27 +139,30 @@ class AuthServiceImplTest {
         User savedUser = User.builder()
                 .id(2L)
                 .email("new@gmail.com")
-                .password("generated-password")
                 .fullName("New User")
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
+                .emailVerified(true)
                 .build();
 
         stubGoogleToken("new@gmail.com", "New User");
-        when(userRepository.findByGoogleSubject("google-subject"))
+        when(authProviderRepository.findByProviderAndProviderSubject(AuthProviderType.GOOGLE, "google-subject"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmailIgnoreCase("new@gmail.com"))
-                .thenReturn(Optional.empty());
-        when(passwordEncoder.encode(any(String.class))).thenReturn("generated-password");
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userRepository.existsByEmailIgnoreCase("new@gmail.com")).thenReturn(false);
+        when(userRepository.saveAndFlush(any(User.class))).thenReturn(savedUser);
         stubIssuedTokens();
 
         authService.loginWithGoogle(request);
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
+        verify(userRepository).saveAndFlush(userCaptor.capture());
         assertThat(userCaptor.getValue().getEmail()).isEqualTo("new@gmail.com");
-        assertThat(userCaptor.getValue().getGoogleSubject()).isEqualTo("google-subject");
+        ArgumentCaptor<AuthProvider> providerCaptor = ArgumentCaptor.forClass(AuthProvider.class);
+        verify(authProviderRepository).saveAndFlush(providerCaptor.capture());
+        assertThat(providerCaptor.getValue().getProvider()).isEqualTo(AuthProviderType.GOOGLE);
+        assertThat(providerCaptor.getValue().getProviderSubject()).isEqualTo("google-subject");
+        assertThat(providerCaptor.getValue().getPasswordHash()).isNull();
+        verifyNoInteractions(passwordEncoder);
         assertThat(userCaptor.getValue().getFullName()).isEqualTo("New User");
         assertThat(userCaptor.getValue().getRole()).isEqualTo(UserRole.USER);
         assertThat(userCaptor.getValue().getStatus()).isEqualTo(UserStatus.ACTIVE);
@@ -166,6 +190,9 @@ class AuthServiceImplTest {
     @Test
     void login_shouldReturnAccessTokenAndRefreshToken() {
         User user = testUser();
+        when(authProviderRepository.findByUserIdAndProvider(user.getId(), AuthProviderType.LOCAL))
+                .thenReturn(Optional.of(AuthProvider.builder().user(user).provider(AuthProviderType.LOCAL)
+                        .passwordHash("encoded-password").build()));
         CustomUserDetails userDetails = new CustomUserDetails(user);
         Authentication authentication = mock(Authentication.class);
 
@@ -253,18 +280,27 @@ class AuthServiceImplTest {
                 "test@gmail.com",
                 "Test User",
                 UserRole.USER,
-                UserStatus.ACTIVE
+                UserStatus.ACTIVE,
+                false
         );
 
-        when(userRepository.existsByEmailIgnoreCase("test@gmail.com")).thenReturn(false);
+        when(userRepository.findByEmailForUpdate("test@gmail.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
-        when(userMapper.toEntity(request, "encoded-password")).thenReturn(user);
-        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toEntity(request)).thenReturn(user);
+        when(userRepository.saveAndFlush(user)).thenReturn(user);
         when(userMapper.toRegisterResponse(user)).thenReturn(expectedResponse);
 
         RegisterResponse response = authService.register(request);
 
         assertThat(response).isEqualTo(expectedResponse);
+        assertThat(user.getEmailVerified()).isFalse();
+        verify(otpService).issue(user, OtpPurpose.EMAIL_VERIFICATION);
+        ArgumentCaptor<AuthProvider> providerCaptor = ArgumentCaptor.forClass(AuthProvider.class);
+        verify(authProviderRepository).save(providerCaptor.capture());
+        assertThat(providerCaptor.getValue().getProvider()).isEqualTo(AuthProviderType.LOCAL);
+        assertThat(providerCaptor.getValue().getPasswordHash()).isEqualTo("encoded-password");
+        assertThat(providerCaptor.getValue().getProviderSubject()).isNull();
+        verifyNoInteractions(jwtService, refreshTokenRepository);
     }
 
     @Test
@@ -275,7 +311,7 @@ class AuthServiceImplTest {
                 "Test User"
         );
 
-        when(userRepository.existsByEmailIgnoreCase("test@gmail.com")).thenReturn(true);
+        when(userRepository.findByEmailForUpdate("test@gmail.com")).thenReturn(Optional.of(testUser()));
 
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(AppException.class)
@@ -324,7 +360,7 @@ class AuthServiceImplTest {
     @Test
     void refreshToken_shouldThrowWhenTokenNotFound() {
         when(jwtService.hashToken("unknown-refresh-token")).thenReturn("unknown-hash");
-        when(refreshTokenRepository.findByTokenHash("unknown-hash")).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findUserIdByTokenHash("unknown-hash")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.refreshToken(
                 new RefreshTokenRequest("unknown-refresh-token")
@@ -393,74 +429,14 @@ class AuthServiceImplTest {
         verify(refreshTokenRepository).save(refreshToken);
     }
 
-    @Test
-    void changePassword_shouldUpdateEncodedPassword() {
-        User user = testUser();
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("old-password", "encoded-password")).thenReturn(true);
-        when(passwordEncoder.encode("new-password123")).thenReturn("new-encoded-password");
-
-        authService.changePassword(
-                1L,
-                new ChangePasswordRequest(
-                        "old-password",
-                        "new-password123",
-                        "new-password123"
-                )
-        );
-
-        assertThat(user.getPassword()).isEqualTo("new-encoded-password");
-        verify(userRepository).save(user);
-    }
-
-    @Test
-    void changePassword_shouldThrowWhenCurrentPasswordInvalid() {
-        User user = testUser();
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("wrong-password", "encoded-password")).thenReturn(false);
-
-        assertThatThrownBy(() -> authService.changePassword(
-                1L,
-                new ChangePasswordRequest(
-                        "wrong-password",
-                        "new-password123",
-                        "new-password123"
-                )
-        ))
-                .isInstanceOf(AppException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.OLD_PASSWORD_NOT_MATCH);
-    }
-
-    @Test
-    void changePassword_shouldThrowWhenUserNotFound() {
-        when(userRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> authService.changePassword(
-                99L,
-                new ChangePasswordRequest(
-                        "old-password",
-                        "new-password123",
-                        "new-password123"
-                )
-        ))
-                .isInstanceOf(AppException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.USER_NOT_FOUND);
-
-        verify(userRepository, never()).save(any(User.class));
-    }
-
     private User testUser() {
         return User.builder()
                 .id(1L)
                 .email("test@gmail.com")
-                .password("encoded-password")
                 .fullName("Test User")
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
+                .emailVerified(true)
                 .build();
     }
 }

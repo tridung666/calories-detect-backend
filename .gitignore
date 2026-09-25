@@ -39,3 +39,6 @@ out/
 ### Local environment ###
 .env
 .prod.env
+
+# macOS metadata
+.DS_Store

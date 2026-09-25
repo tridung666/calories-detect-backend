@@ -1,8 +1,9 @@
 package com.tridung.caloriesdetect.security;
 
-import com.tridung.caloriesdetect.exception.AppException;
-import com.tridung.caloriesdetect.exception.ErrorCode;
 import com.tridung.caloriesdetect.repository.UserRepository;
+import com.tridung.caloriesdetect.repository.AuthProviderRepository;
+import com.tridung.caloriesdetect.common.enums.AuthProviderType;
+import com.tridung.caloriesdetect.entity.AuthProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,11 +15,14 @@ import org.springframework.stereotype.Service;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final AuthProviderRepository authProviderRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return userRepository.findByEmailIgnoreCase(email)
-                .map(CustomUserDetails::new)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .map(user -> new CustomUserDetails(user, authProviderRepository
+                        .findByUserIdAndProvider(user.getId(), AuthProviderType.LOCAL)
+                        .map(AuthProvider::getPasswordHash).orElse(null)))
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid email or password"));
     }
 }

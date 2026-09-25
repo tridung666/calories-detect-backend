@@ -18,7 +18,7 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-calories_user}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-calories_password}
       JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION: ${JWT_EXPIRATION:-24h}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-15m}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
     ports:
       - "${APP_PORT:-8080}:8080"
