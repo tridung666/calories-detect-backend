@@ -69,7 +69,8 @@ hay bản nháp phía server. Endpoint analyze không tạo, sửa hoặc xóa m
    Với meal có sẵn, dùng ID hiện tại.
 3. Gửi `FormData` có field `file` lên API ảnh. Để browser đặt multipart boundary;
    không tự đặt header `Content-Type: application/json`. Chấp nhận JPEG/PNG/WebP,
-   tối đa 5 MiB. Chỉ chuyển sang phân tích sau khi upload thành công.
+   tối đa 10 MiB (10.485.760 byte). Ảnh lớn hơn cần resize/nén trước khi upload;
+   ảnh HEIC/HEIF cần chuyển sang JPEG, PNG hoặc WebP. Chỉ chuyển sang phân tích sau khi upload thành công.
 4. Bấm “Phân tích”, gọi analyze không body. Hiện trạng thái đang phân tích và
    khóa nút khi request đang chạy. Dùng timeout riêng khoảng 90 giây với backend
    75 giây/AI 60 giây. Tránh tự retry vì mỗi lần phân tích có thể gọi model trả phí.
@@ -139,7 +140,7 @@ items; khi mở lại màn hình chi tiết, FE tải thêm GET items.
 | 401 | Session thiếu/hết hạn | Dùng luồng refresh hiện có; đăng nhập nếu refresh thất bại |
 | 404 / 14000 | Meal thiếu hoặc không thuộc user | Thông báo không tìm thấy, tải lại danh sách |
 | 400 / 15000 | File không hợp lệ | Yêu cầu chọn JPEG/PNG/WebP hợp lệ |
-| 413 / 15001 | Ảnh quá 5 MiB | Yêu cầu ảnh nhỏ hơn |
+| 413 / 15001 | Ảnh quá 10 MiB | Resize/nén ảnh xuống tối đa 10 MiB rồi upload lại |
 | 503 / 15002 | Upload Cloudinary lỗi | Cho người dùng thử upload lại |
 | 400 / 16000 | Meal chưa có ảnh | Upload ảnh trước |
 | 503 / 16001 | AI/provider không sẵn sàng | Giữ màn hình, cho thử lại hoặc nhập tay |

@@ -2,6 +2,8 @@
 
 Tài liệu mô tả phần thay đổi upload ảnh trong working tree tại ngày 29/09/2026: 11 file mới và 19 file đã sửa, chưa tính chính tài liệu này. Tại thời điểm viết, các thay đổi chưa được stage. Nội dung dưới đây giải thích implementation hiện có, không coi các cải tiến được đề xuất là chức năng đã hoàn thành.
 
+Cập nhật 06/10/2026: giới hạn upload hiện tại đã tăng lên 10 MiB/file, 11 MiB/request và `max-swallow-size` là 16 MiB để nhận ảnh từ điện thoại lớn hơn 5 MiB. Các mô tả 5 MiB bên dưới ghi lại implementation cũ; xem [image-uploads.md](image-uploads.md) để biết hợp đồng API hiện tại.
+
 ## 1. Chức năng được bổ sung
 
 Người dùng có thể upload, thay thế và xóa avatar của mình; upload, thay thế và xóa một ảnh cho mỗi bữa ăn thuộc tài khoản của mình. Khi xóa bữa ăn, hệ thống cũng xóa ảnh tương ứng trên Cloudinary. `meal_items` không có ảnh riêng trong thay đổi này.

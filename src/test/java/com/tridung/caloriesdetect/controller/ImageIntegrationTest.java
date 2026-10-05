@@ -16,6 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -267,7 +268,8 @@ class ImageIntegrationTest {
         var oversized = new MockMultipartFile("file", "image.png", "image/png",
                 new byte[(int) CloudinaryImageStorageService.MAX_IMAGE_SIZE + 1]);
         mvc.perform(multipart(HttpMethod.PUT, path(avatar)).file(oversized).header("Authorization", authorization))
-                .andExpect(status().isPayloadTooLarge()).andExpect(jsonPath("$.code").value(15001));
+                .andExpect(status().isPayloadTooLarge()).andExpect(jsonPath("$.code").value(15001))
+                .andExpect(jsonPath("$.message").value("Image must not exceed 10 MiB"));
         verifyNoInteractions(uploader);
     }
 
@@ -356,15 +358,15 @@ class ImageIntegrationTest {
         }
     }
 
-    @ParameterizedTest @ValueSource(ints = {3, 5})
-    void servletAcceptsImagesWithinFiveMiBLimit(int sizeMiB) throws Exception {
+    @ParameterizedTest @CsvSource({"true,3", "true,5", "true,6", "true,10", "false,6", "false,10"})
+    void servletAcceptsImagesWithinTenMiBLimit(boolean avatar, int sizeMiB) throws Exception {
         String boundary = "image-test-boundary";
         byte[] image = java.util.Arrays.copyOf(PNG, sizeMiB * 1024 * 1024);
         byte[] header = ("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"image.png\"\r\n"
                 + "Content-Type: image/png\r\n\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8);
         byte[] footer = ("\r\n--" + boundary + "--\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8);
         try (HttpClient client = HttpClient.newHttpClient()) {
-            var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path(true)))
+            var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path(avatar)))
                     .header("Authorization", authorization)
                     .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                     .PUT(HttpRequest.BodyPublishers.concat(HttpRequest.BodyPublishers.ofByteArray(header),
@@ -372,15 +374,16 @@ class ImageIntegrationTest {
                     .build();
             var response = client.send(request, HttpResponse.BodyHandlers.ofString());
             assertThat(response.statusCode()).isEqualTo(200);
-            assertThat(response.body()).contains("\"success\":true", "\"avatarUrl\":");
+            assertThat(response.body()).contains("\"success\":true", "\"" + field(avatar) + "\":");
         }
         verify(uploader).upload(argThat((byte[] bytes) -> bytes.length == image.length), anyMap());
     }
 
-    @Test void servletRejectsOversizedMultipartWithProjectErrorEnvelope() throws Exception {
+    @ParameterizedTest @ValueSource(ints = {10 * 1024 * 1024 + 1, 12 * 1024 * 1024})
+    void servletRejectsOversizedMultipartWithProjectErrorEnvelope(int sizeBytes) throws Exception {
         String boundary = "image-test-boundary";
         String body = "--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"large.png\"\r\n"
-                + "Content-Type: image/png\r\n\r\n" + "x".repeat(6 * 1024 * 1024) + "\r\n--" + boundary + "--\r\n";
+                + "Content-Type: image/png\r\n\r\n" + "x".repeat(sizeBytes) + "\r\n--" + boundary + "--\r\n";
         try (HttpClient client = HttpClient.newHttpClient()) {
             var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path(true)))
                     .header("Authorization", authorization)
@@ -388,7 +391,7 @@ class ImageIntegrationTest {
                     .PUT(HttpRequest.BodyPublishers.ofString(body)).build();
             var response = client.send(request, HttpResponse.BodyHandlers.ofString());
             assertThat(response.statusCode()).isEqualTo(413);
-            assertThat(response.body()).contains("\"code\":15001", "\"success\":false");
+            assertThat(response.body()).contains("\"code\":15001", "\"success\":false", "Image must not exceed 10 MiB");
         }
         verifyNoInteractions(uploader);
     }

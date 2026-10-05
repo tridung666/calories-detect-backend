@@ -48,8 +48,9 @@ class CloudinaryImageStorageServiceTest {
         verify(uploader).upload(eq(bytes), anyMap());
     }
 
-    @Test void acceptsMaximumSize() throws Exception {
-        byte[] bytes = new byte[(int) CloudinaryImageStorageService.MAX_IMAGE_SIZE];
+    @ParameterizedTest @ValueSource(ints = {6, 10})
+    void acceptsPhoneImagesUpToTenMiB(int sizeMiB) throws Exception {
+        byte[] bytes = new byte[sizeMiB * 1024 * 1024];
         bytes[0] = (byte) 0xff;
         bytes[1] = (byte) 0xd8;
         bytes[2] = (byte) 0xff;
