@@ -53,12 +53,12 @@ class MealItemIntegrationTest {
     @Autowired com.tridung.caloriesdetect.repository.MealItemRepository items;
     @Autowired jakarta.persistence.EntityManager entityManager;
     private static final String ITEM = """
-            {"inputName":"Rice", "normalizedName":"rice", "quantityGrams":150.25,
+            {"inputName":"Rice", "quantityGrams":150.25,
              "calories":195, "proteinGrams":4, "carbohydrateGrams":42, "fatGrams":0}
             """;
 
     private long createMeal(String token) throws Exception {
-        String body = mvc.perform(post("/api/meal/create").header("Authorization", "Bearer " + token)
+        String body = mvc.perform(post("/api/meal").header("Authorization", "Bearer " + token)
                         .contentType("application/json").content(BODY))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         return json.readTree(body).path("data").path("id").asLong();
@@ -70,6 +70,7 @@ class MealItemIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("data.mealId").value(mealId))
                 .andExpect(jsonPath("data.quantityGrams").value(150.25))
                 .andExpect(jsonPath("data.calories").value(195))
+                .andExpect(jsonPath("data.normalizedName").doesNotExist())
                 .andExpect(jsonPath("data.proteinGrams").value(4))
                 .andExpect(jsonPath("data.carbohydrateGrams").value(42))
                 .andExpect(jsonPath("data.fatGrams").value(0))
@@ -89,12 +90,12 @@ class MealItemIntegrationTest {
         mvc.perform(get(base + "/" + item).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk()).andExpect(jsonPath("data.inputName").value("Rice"));
         mvc.perform(put(base + "/" + item).header("Authorization", "Bearer " + token)
-                        .contentType("application/json").content(ITEM.replace("195", "200").replace("\"rice\"", "null")))
+                        .contentType("application/json").content(ITEM.replace("195", "200")))
                 .andExpect(status().isOk()).andExpect(jsonPath("data.calories").value(200));
         entityManager.flush();
         entityManager.clear();
-        assertEquals(200, items.findById(item).orElseThrow().getCalories());
-        org.junit.jupiter.api.Assertions.assertNull(items.findById(item).orElseThrow().getNormalizedName());
+        assertEquals(0, new java.math.BigDecimal("200").compareTo(items.findById(item).orElseThrow().getCalories()));
+        assertEquals("Rice", items.findById(item).orElseThrow().getInputName());
         mvc.perform(delete(base + "/" + item).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
         mvc.perform(get(base + "/" + item).header("Authorization", "Bearer " + token))
@@ -136,7 +137,6 @@ class MealItemIntegrationTest {
         invalid.add("{}");
         invalid.add(ITEM.replace("Rice", " "));
         invalid.add(ITEM.replace("Rice", "x".repeat(256)));
-        invalid.add(ITEM.replace("rice", "x".repeat(256)));
         for (String field : java.util.List.of("quantityGrams", "calories", "proteinGrams", "carbohydrateGrams", "fatGrams")) {
             for (String value : java.util.List.of("null", "-1", field.equals("quantityGrams") ? "100000000" : "2147483648", "0.001")) {
                 var body = json.readTree(ITEM);

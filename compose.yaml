@@ -11,6 +11,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      ai:
+        condition: service_healthy
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -20,8 +22,27 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-15m}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
+      # Always use Compose DNS, even if the host .env points at localhost.
+      AI_SERVICE_BASE_URL: http://ai:8000
+      AI_SERVICE_CONNECT_TIMEOUT: ${AI_SERVICE_CONNECT_TIMEOUT:-3s}
+      AI_SERVICE_RESPONSE_TIMEOUT: ${AI_SERVICE_RESPONSE_TIMEOUT:-75s}
     ports:
       - "${APP_PORT:-8080}:8080"
+
+  ai:
+    build:
+      context: ${AI_BUILD_CONTEXT:-../calories-detect-AI}
+    image: calories-detect-ai:local
+    env_file:
+      - ${AI_ENV_FILE:-../calories-detect-AI/.env}
+    restart: unless-stopped
+    expose:
+      - "8000"
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   postgres:
     image: postgres:16-alpine

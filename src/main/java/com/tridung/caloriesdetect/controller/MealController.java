@@ -29,8 +29,22 @@ public class MealController {
     private final MealService mealService;
 
     @Operation(
-            summary = "Create Meal",
-            description = "Create a meal for the current user"
+            summary = "Create meal",
+            description = "Create a meal for the current user using POST /api/meal. Requires a Bearer access token.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "mealType": "SNACK",
+                                              "mealDate": "2026-09-30"
+                                            }
+                                            """
+                            )
+                    )
+            )
     )
     @ApiResponses({
             @ApiResponse(
@@ -47,7 +61,7 @@ public class MealController {
                                               "data": {
                                                 "id": 8,
                                                 "mealType": "SNACK",
-                                                "mealDate": "1958-06-07"
+                                                "mealDate": "2026-09-30"
                                               }
                                             }
                                             """
@@ -63,7 +77,7 @@ public class MealController {
                     description = "Unauthorized"
             )
     })
-    @PostMapping("/create")
+    @PostMapping
     public BaseResponse<MealResponse> createMeal(
             @Valid @RequestBody MealRequest request
     ) {

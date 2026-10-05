@@ -21,22 +21,19 @@ public class MealItem extends BaseEntity {
     @Column(name = "input_name", nullable = false, length = 255)
     private String inputName;
 
-    @Column(name = "normalized_name", length = 255)
-    private String normalizedName;
-
     @Column(name = "quantity_grams", nullable = false, precision = 10, scale = 2)
     private BigDecimal quantityGrams;
 
-    @Column(name = "calories", nullable = false)
-    private Integer calories;
+    @Column(name = "calories", nullable = false, precision = 12, scale = 2)
+    private BigDecimal calories;
 
-    @Column(name = "protein_grams", nullable = false)
-    private Integer proteinGrams;
+    @Column(name = "protein_grams", nullable = false, precision = 12, scale = 2)
+    private BigDecimal proteinGrams;
 
-    @Column(name = "carbohydrate_grams", nullable = false)
-    private Integer carbohydrateGrams;
+    @Column(name = "carbohydrate_grams", nullable = false, precision = 12, scale = 2)
+    private BigDecimal carbohydrateGrams;
 
-    @Column(name = "fat_grams", nullable = false)
-    private Integer fatGrams;
+    @Column(name = "fat_grams", nullable = false, precision = 12, scale = 2)
+    private BigDecimal fatGrams;
 
 }

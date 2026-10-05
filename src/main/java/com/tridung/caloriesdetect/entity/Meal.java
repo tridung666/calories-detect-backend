@@ -14,6 +14,12 @@ import java.time.LocalDate;
 @Setter
 @Builder
 public class Meal extends BaseEntity {
+    @Column(name = "image_public_id")
+    private String imagePublicId;
+
+    @Column(name = "image_url", columnDefinition = "text")
+    private String imageUrl;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

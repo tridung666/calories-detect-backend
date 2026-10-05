@@ -8,6 +8,7 @@ public record UserResponse(
         String fullName,
         String role,
         String status,
+        String avatarUrl,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

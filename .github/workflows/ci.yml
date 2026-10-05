@@ -46,6 +46,9 @@ jobs:
       JWT_EXPIRATION: 24h
       JWT_REFRESH_EXPIRATION: 7d
       GOOGLE_CLIENT_ID: test-client-id.apps.googleusercontent.com
+      CLOUDINARY_CLOUD_NAME: ci-cloud
+      CLOUDINARY_API_KEY: ci-key
+      CLOUDINARY_API_SECRET: ci-secret
       MAIL_USERNAME: ci@example.invalid
       MAIL_PASSWORD: ci-only
       SPRING_MAIL_HOST: 127.0.0.1

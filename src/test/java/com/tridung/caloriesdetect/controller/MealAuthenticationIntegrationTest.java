@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.hamcrest.Matchers.containsString;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,6 +35,15 @@ class MealAuthenticationIntegrationTest {
     @Autowired PasswordEncoder encoder;
     private final ObjectMapper json = new ObjectMapper();
     private static final String BODY = "{\"mealType\":\"SNACK\",\"mealDate\":\"1958-06-07\"}";
+
+    @Test void swaggerDocumentsMealCreationAtBasePath() throws Exception {
+        mvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/meal'].post.summary").value("Create meal"))
+                .andExpect(jsonPath("$.paths['/api/meal'].post.description").value(containsString("POST /api/meal")))
+                .andExpect(jsonPath("$.paths['/api/meal'].post.requestBody.required").value(true))
+                .andExpect(jsonPath("$.paths['/api/meal/create']").doesNotExist());
+    }
 
     private User createUser() {
         User user = users.saveAndFlush(User.builder().email(UUID.randomUUID()+"@example.com")
@@ -51,7 +61,7 @@ class MealAuthenticationIntegrationTest {
         return json.readTree(body).path("data").path("accessToken").asText();
     }
     private void assertOwner(String token, Long userId) throws Exception {
-        String body = mvc.perform(post("/api/meal/create").header("Authorization", "Bearer "+token)
+        String body = mvc.perform(post("/api/meal").header("Authorization", "Bearer "+token)
                 .contentType("application/json").content(BODY)).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         Long mealId = json.readTree(body).path("data").path("id").asLong();
@@ -66,21 +76,21 @@ class MealAuthenticationIntegrationTest {
         assertOwner(firstToken, first.getId());
     }
     @Test void missingAndMalformedBearerAreRejected() throws Exception {
-        mvc.perform(post("/api/meal/create").contentType("application/json").content(BODY))
+        mvc.perform(post("/api/meal").contentType("application/json").content(BODY))
                 .andExpect(status().isUnauthorized());
         String token = login(createUser(), null);
-        mvc.perform(post("/api/meal/create").header("Authorization", "Bearer Bearer "+token)
+        mvc.perform(post("/api/meal").header("Authorization", "Bearer Bearer "+token)
                 .contentType("application/json").content(BODY)).andExpect(status().isUnauthorized());
     }
     @Test void invalidEnumReturnsBadRequestWithValidToken() throws Exception {
         String token = login(createUser(), null);
-        mvc.perform(post("/api/meal/create").header("Authorization", "Bearer "+token)
+        mvc.perform(post("/api/meal").header("Authorization", "Bearer "+token)
                 .contentType("application/json").content(BODY.replace("SNACK", "LUNC")))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("code").value(400));
     }
 
     private long createMeal(String token, String body) throws Exception {
-        String response = mvc.perform(post("/api/meal/create").header("Authorization", "Bearer " + token)
+        String response = mvc.perform(post("/api/meal").header("Authorization", "Bearer " + token)
                         .contentType("application/json").content(body))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         return json.readTree(response).path("data").path("id").asLong();

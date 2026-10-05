@@ -13,6 +13,12 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class User extends BaseEntity {
+    @Column(name = "avatar_public_id")
+    private String avatarPublicId;
+
+    @Column(name = "avatar_url", columnDefinition = "text")
+    private String avatarUrl;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

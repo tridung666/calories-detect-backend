@@ -1,6 +1,14 @@
 package com.tridung.caloriesdetect.service.impl;
 
+import org.springframework.web.multipart.MultipartFile;
+import com.tridung.caloriesdetect.service.ImageUpdateService;
 import com.tridung.caloriesdetect.dto.request.meal.MealRequest;
+import com.tridung.caloriesdetect.dto.request.meal.ConfirmMealAnalysisRequest;
+import com.tridung.caloriesdetect.dto.response.meal.MealAnalysisResponse;
+import com.tridung.caloriesdetect.dto.response.meal.MealDetailsResponse;
+import com.tridung.caloriesdetect.entity.MealItem;
+import com.tridung.caloriesdetect.mapper.MealItemMapper;
+import com.tridung.caloriesdetect.service.MealAnalysisClient;
 import com.tridung.caloriesdetect.dto.response.meal.MealResponse;
 import com.tridung.caloriesdetect.entity.Meal;
 import com.tridung.caloriesdetect.entity.User;
@@ -14,13 +22,13 @@ import com.tridung.caloriesdetect.security.CurrentUserProvider;
 import com.tridung.caloriesdetect.service.MealService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import com.tridung.caloriesdetect.common.enums.MealType;
 import com.tridung.caloriesdetect.common.response.PageResponse;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDate;
 
@@ -33,6 +41,65 @@ public class MealServiceImpl implements MealService {
     private final MealItemRepository mealItemRepository;
     private final MealMapper mealMapper;
     private final CurrentUserProvider currentUserProvider;
+    private final ImageUpdateService imageUpdateService;
+    private final MealAnalysisClient mealAnalysisClient;
+    private final MealItemMapper mealItemMapper;
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public MealAnalysisResponse analyze(Long mealId) {
+        // Resolve ownership first; do not hold a database transaction during the HTTP call.
+        Meal meal = findOwnedMeal(mealId);
+        if (meal.getImageUrl() == null || meal.getImageUrl().isBlank()) {
+            throw new AppException(ErrorCode.MEAL_IMAGE_REQUIRED);
+        }
+        return mealAnalysisClient.analyze(meal.getId(), meal.getImageUrl());
+    }
+
+    @Override
+    @Transactional
+    public MealDetailsResponse confirmAnalysis(Long mealId, ConfirmMealAnalysisRequest request) {
+        Meal meal = findOwnedMealForUpdate(mealId);
+        var confirmed = request.items().stream().map(input -> {
+            MealItem item = new MealItem();
+            mealItemMapper.update(input, item);
+            item.setMeal(meal);
+            return item;
+        }).toList();
+        mealItemRepository.deleteAllByMeal_Id(mealId);
+        mealItemRepository.flush();
+        var saved = mealItemRepository.saveAllAndFlush(confirmed);
+        return mealMapper.toMealDetailsResponse(meal, saved.stream().map(mealItemMapper::toResponse).toList());
+    }
+
+    @Override
+    @Transactional
+    public MealResponse uploadImage(Long mealId, MultipartFile file) {
+        Meal meal = findOwnedMealForUpdate(mealId);
+        imageUpdateService.replace(file, meal.getUserId().getId(), meal.getId(), meal.getImagePublicId(), uploaded -> {
+            meal.setImagePublicId(uploaded.publicId());
+            meal.setImageUrl(uploaded.secureUrl());
+            mealRepository.saveAndFlush(meal);
+        });
+        return mealMapper.toMealResponse(meal);
+    }
+
+    @Override
+    @Transactional
+    public MealResponse deleteImage(Long mealId) {
+        Meal meal = findOwnedMealForUpdate(mealId);
+        imageUpdateService.delete(meal.getImagePublicId(), () -> {
+            meal.setImagePublicId(null);
+            meal.setImageUrl(null);
+            mealRepository.saveAndFlush(meal);
+        });
+        return mealMapper.toMealResponse(meal);
+    }
+
+    private Meal findOwnedMealForUpdate(Long mealId) {
+        return mealRepository.findOwnedByIdForUpdate(mealId, currentUserProvider.getCurrentUserId())
+                .orElseThrow(() -> new AppException(ErrorCode.MEAL_NOT_FOUND));
+    }
 
     @Override
     @Transactional
@@ -74,7 +141,7 @@ public class MealServiceImpl implements MealService {
     @Override
     @Transactional
     public MealResponse updateMeal(Long id, MealRequest request) {
-        Meal meal = findOwnedMeal(id);
+        Meal meal = findOwnedMealForUpdate(id);
         meal.setMealType(request.mealType());
         meal.setMealDate(request.mealDate());
         return mealMapper.toMealResponse(mealRepository.save(meal));
@@ -83,9 +150,12 @@ public class MealServiceImpl implements MealService {
     @Override
     @Transactional
     public void deleteMeal(Long id) {
-        Meal meal = findOwnedMeal(id);
-        mealItemRepository.deleteAllByMeal_Id(id);
-        mealRepository.delete(meal);
+        Meal meal = findOwnedMealForUpdate(id);
+        imageUpdateService.delete(meal.getImagePublicId(), () -> {
+            mealItemRepository.deleteAllByMeal_Id(id);
+            mealRepository.delete(meal);
+            mealRepository.flush();
+        });
     }
 
     private Meal findOwnedMeal(Long id) {

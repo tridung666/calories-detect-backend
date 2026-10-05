@@ -18,6 +18,8 @@ import java.util.Locale;
 )
 public interface UserMapper {
 
+    @Mapping(target = "avatarPublicId", ignore = true)
+    @Mapping(target = "avatarUrl", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", source = "request.email", qualifiedByName = "normalizeEmail")
     @Mapping(target = "fullName", expression = "java(request.fullName().trim())")
@@ -26,6 +28,8 @@ public interface UserMapper {
     @Mapping(target = "emailVerified", constant = "false")
     User toEntity(RegisterRequest request);
 
+    @Mapping(target = "avatarPublicId", ignore = true)
+    @Mapping(target = "avatarUrl", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", source = "request.email", qualifiedByName = "normalizeEmail")
     @Mapping(target = "fullName", expression = "java(request.fullName().trim())")

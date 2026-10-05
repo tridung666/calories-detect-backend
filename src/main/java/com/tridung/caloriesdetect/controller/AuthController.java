@@ -17,10 +17,13 @@ import com.tridung.caloriesdetect.dto.response.auth.LoginResponse;
 import com.tridung.caloriesdetect.dto.response.auth.RegisterResponse;
 import com.tridung.caloriesdetect.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,12 +44,25 @@ public class AuthController {
     private final AuthService authService;
     private final AuthCookies authCookies;
 
-    public record CsrfResponse(String token, String headerName) {}
+    public record CsrfResponse(
+            @Schema(description = "Masked CSRF token. Paste this value into Authorize > csrfHeader; do not use the cookie value.")
+            String token,
+            @Schema(description = "Header to send with the CSRF token", example = "X-XSRF-TOKEN")
+            String headerName
+    ) {}
 
     @GetMapping("/csrf")
     @SecurityRequirements
-    @Operation(summary = "Get CSRF token", description = "Fetch with credentials before login, Google login, refresh or logout. Keep the returned masked token in memory and send it in X-XSRF-TOKEN. The matching HttpOnly cookie remains owned by the API host.")
-    public BaseResponse<CsrfResponse> csrf(CsrfToken token, HttpServletResponse response) {
+    @Operation(summary = "Get CSRF token", description = "No Bearer token or request body required. In Swagger UI: "
+            + "1. Execute this endpoint. 2. Copy data.token. 3. Open Authorize and paste it into csrfHeader without a Bearer prefix. "
+            + "4. Execute login, Google login, refresh or logout on the same API host. "
+            + "The browser retains the matching HttpOnly CSRF cookie automatically. Do not switch between localhost and 127.0.0.1.")
+    @ApiResponse(responseCode = "200", description = "CSRF token and header name; the matching cookie is managed by the browser",
+            headers = {
+                    @Header(name = "Set-Cookie", description = "HttpOnly CSRF cookie: calories_csrf locally or __Host-calories_csrf with secure cookies enabled. Path=/; SameSite=Lax. May be omitted if the cookie already exists.", schema = @Schema(type = "string")),
+                    @Header(name = "Cache-Control", schema = @Schema(type = "string", example = "no-store"))
+            })
+    public BaseResponse<CsrfResponse> csrf(@Parameter(hidden = true) CsrfToken token, HttpServletResponse response) {
         response.setHeader("Cache-Control", "no-store");
         return BaseResponse.success(new CsrfResponse(token.getToken(), token.getHeaderName()));
     }
@@ -57,11 +73,14 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @SecurityRequirements
+    @SecurityRequirement(name = "csrfHeader")
     @Operation(
             summary = "Login",
-            description = "Authenticate using email and password. Requires X-XSRF-TOKEN from GET /api/auth/csrf. Returns only accessToken, tokenType and expiresIn in JSON; sets a host-only HttpOnly refresh cookie (SameSite=Lax, Path=/api/auth, Secure in production)"
+            description = "Authenticate using email and password. Execute GET /api/auth/csrf, then set Authorize > csrfHeader to data.token. "
+                    + "Requires X-XSRF-TOKEN and its matching browser-managed CSRF cookie; no Bearer token required. "
+                    + "Returns only accessToken, tokenType and expiresIn in JSON; sets a host-only HttpOnly refresh cookie (SameSite=Lax, Path=/api/auth, Secure in production)."
     )
+    @ApiResponse(responseCode = "403", ref = "#/components/responses/InvalidCsrfToken")
     @ApiResponse(
             responseCode = "200",
             description = "Login successful",
@@ -89,11 +108,14 @@ public class AuthController {
     }
 
     @PostMapping("/google")
-    @SecurityRequirements
+    @SecurityRequirement(name = "csrfHeader")
     @Operation(
             summary = "Login with Google",
-            description = "Verify a Google ID token. Requires X-XSRF-TOKEN. Returns accessToken, tokenType and expiresIn in JSON and sets the HttpOnly refresh cookie"
+            description = "Verify a Google ID token from the JSON body. Execute GET /api/auth/csrf and set Authorize > csrfHeader to data.token. "
+                    + "Requires X-XSRF-TOKEN and its matching browser-managed CSRF cookie; no Bearer token required. "
+                    + "Returns accessToken, tokenType and expiresIn in JSON and sets the HttpOnly refresh cookie."
     )
+    @ApiResponse(responseCode = "403", ref = "#/components/responses/InvalidCsrfToken")
     public BaseResponse<LoginResponse> loginWithGoogle(
             @Valid @RequestBody GoogleLoginRequest request, HttpServletResponse response
     ) {
@@ -115,11 +137,15 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
-    @SecurityRequirements
+    @SecurityRequirement(name = "csrfHeader")
     @Operation(
             summary = "Refresh token",
-            description = "Requires the refresh cookie and X-XSRF-TOKEN; no request body or Bearer token. Atomically revokes the old refresh token and rotates its cookie. Returns accessToken, tokenType and expiresIn only. Missing, expired or revoked cookies return 401"
+            description = "Requires BOTH the refresh cookie from a previous login and X-XSRF-TOKEN with its matching CSRF cookie. "
+                    + "Execute GET /api/auth/csrf and set Authorize > csrfHeader to data.token. Cookies are sent by the browser on the same API host. "
+                    + "No request body or Bearer token. Atomically revokes the old refresh token and rotates its cookie. "
+                    + "Returns accessToken, tokenType and expiresIn only. Missing, expired or revoked refresh cookies return 401."
     )
+    @ApiResponse(responseCode = "403", ref = "#/components/responses/InvalidCsrfToken")
     @ApiResponse(
             responseCode = "200",
             description = "Token refreshed successfully",
@@ -230,11 +256,15 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @SecurityRequirements
+    @SecurityRequirement(name = "csrfHeader")
     @Operation(
             summary = "Logout",
-            description = "Requires X-XSRF-TOKEN; no request body or Bearer token. Idempotently revokes the refresh cookie and any rotated successor, then expires the cookie. Existing access JWTs remain valid until their short expiration"
+            description = "Execute GET /api/auth/csrf and set Authorize > csrfHeader to data.token. "
+                    + "Requires X-XSRF-TOKEN and its matching browser-managed CSRF cookie; no request body or Bearer token. "
+                    + "Revokes the refresh cookie and any rotated successor, then expires the cookie. "
+                    + "The refresh cookie is optional: logout also succeeds when it is absent. Existing access JWTs remain valid until expiration."
     )
+    @ApiResponse(responseCode = "403", ref = "#/components/responses/InvalidCsrfToken")
     @ApiResponse(
             responseCode = "200",
             description = "Logout successful",
