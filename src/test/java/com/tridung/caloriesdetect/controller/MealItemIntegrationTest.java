@@ -58,7 +58,7 @@ class MealItemIntegrationTest {
             """;
 
     private long createMeal(String token) throws Exception {
-        String body = mvc.perform(post("/api/meal/create").header("Authorization", "Bearer " + token)
+        String body = mvc.perform(post("/api/meal").header("Authorization", "Bearer " + token)
                         .contentType("application/json").content(BODY))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         return json.readTree(body).path("data").path("id").asLong();

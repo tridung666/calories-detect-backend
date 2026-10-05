@@ -28,6 +28,26 @@ not clear the user's session. A network error does not prove session expiry.
 CORS must allow the exact frontend origin with credentials and X-XSRF-TOKEN;
 the same-origin Vite/Nginx proxy is supported.
 
+### Try CSRF-protected endpoints in Swagger UI
+
+1. Open `/swagger-ui.html` on the API host and execute `GET /api/auth/csrf`.
+2. Copy `data.token`, open **Authorize**, and paste it into **csrfHeader** without
+   a `Bearer` prefix. Swagger sends it as `X-XSRF-TOKEN` on login, Google login,
+   refresh, and logout. The browser keeps and sends the matching HttpOnly cookie.
+3. Execute login or Google login with the normal JSON body. This also sets the
+   HttpOnly refresh cookie in the browser.
+4. Refresh requires both the CSRF header/cookie pair and the refresh cookie.
+   Logout requires the CSRF pair but also succeeds without a refresh cookie.
+   Neither endpoint needs a JSON body or Bearer token.
+
+Use the same host throughout; do not alternate between `localhost` and
+`127.0.0.1`. Do not paste a refresh token into Swagger's cookie authorization
+field: the browser manages cookies from `Set-Cookie`; Swagger cannot manually
+set the `Cookie` header. See [Swagger's cookie authentication documentation](https://swagger.io/docs/specification/v3_0/authentication/cookie-authentication/).
+If you receive 403/code `40301`, execute `/api/auth/csrf` again and update
+**csrfHeader** with the new `data.token`. API endpoints using Bearer JWT, including
+avatar and meal image uploads, keep their existing Bearer authentication.
+
 ## Endpoints
 
 | Method and path after /api | Body | Authentication |
