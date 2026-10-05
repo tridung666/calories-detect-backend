@@ -5,6 +5,12 @@ import lombok.Getter;
 @Getter
 public enum ErrorCode {
 
+    // Images
+    INVALID_IMAGE(15000, "Image must be a non-empty JPEG, PNG or WebP file"),
+    IMAGE_TOO_LARGE(15001, "Image must not exceed 5 MiB"),
+    IMAGE_UPLOAD_FAILED(15002, "Unable to upload image. Please try again later"),
+    IMAGE_DELETE_FAILED(15003, "Unable to delete image. Please try again later"),
+
     // Meal
     MEAL_ITEM_NOT_FOUND(14002, "Meal item not found"),
     MEAL_NOT_FOUND(14000, "Meal not found"),

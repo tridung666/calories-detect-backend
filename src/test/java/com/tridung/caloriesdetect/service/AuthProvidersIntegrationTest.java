@@ -208,7 +208,7 @@ class AuthProvidersIntegrationTest {
         var current = org.flywaydb.core.Flyway.configure().dataSource(dataSource)
                 .schemas(schema).defaultSchema(schema).target("5").load();
         var upgraded = org.flywaydb.core.Flyway.configure().dataSource(dataSource)
-                .schemas(schema).defaultSchema(schema).cleanDisabled(false).load();
+                .schemas(schema).defaultSchema(schema).target("7").cleanDisabled(false).load();
         try {
             current.migrate();
             assertThat(current.info().current().getVersion().getVersion()).isEqualTo("5");

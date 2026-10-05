@@ -1,5 +1,7 @@
 package com.tridung.caloriesdetect.exception;
 
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import com.tridung.caloriesdetect.common.response.BaseResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -10,6 +12,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<BaseResponse<Void>> handleMaxUploadSizeExceededException() {
+        return handleAppException(new AppException(ErrorCode.IMAGE_TOO_LARGE));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<BaseResponse<Void>> handleMissingImagePart() {
+        return handleAppException(new AppException(ErrorCode.INVALID_IMAGE));
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<BaseResponse<Void>> handleHttpMessageNotReadableException(
             HttpMessageNotReadableException exception
@@ -25,7 +37,8 @@ public class GlobalExceptionHandler {
 
         int status = switch (errorCode) {
             case MEAL_NOT_FOUND, MEAL_ITEM_NOT_FOUND -> 404;
-            case EMAIL_DELIVERY_FAILED -> 503;
+            case EMAIL_DELIVERY_FAILED, IMAGE_UPLOAD_FAILED, IMAGE_DELETE_FAILED -> 503;
+            case IMAGE_TOO_LARGE -> 413;
             case OTP_RATE_LIMITED -> 429;
             case REFRESH_TOKEN_NOT_FOUND, REFRESH_TOKEN_EXPIRED, REFRESH_TOKEN_REVOKED, INVALID_REFRESH_TOKEN -> 401;
             default -> 400;

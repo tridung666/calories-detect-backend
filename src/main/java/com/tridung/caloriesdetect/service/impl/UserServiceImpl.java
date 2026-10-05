@@ -1,5 +1,8 @@
 package com.tridung.caloriesdetect.service.impl;
 
+import org.springframework.web.multipart.MultipartFile;
+import com.tridung.caloriesdetect.security.CurrentUserProvider;
+import com.tridung.caloriesdetect.service.ImageUpdateService;
 import com.tridung.caloriesdetect.common.response.PageResponse;
 import com.tridung.caloriesdetect.dto.request.admin.AdminUserRequest;
 import com.tridung.caloriesdetect.dto.response.auth.UserResponse;
@@ -28,6 +31,38 @@ public class UserServiceImpl implements UserService {
     private final AuthProviderRepository authProviderRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final CurrentUserProvider currentUserProvider;
+    private final ImageUpdateService imageUpdateService;
+
+    @Override
+    @Transactional
+    public UserResponse uploadAvatar(MultipartFile file) {
+        User user = findCurrentUserForUpdate();
+        imageUpdateService.replace(file, user.getAvatarPublicId(), uploaded -> {
+            user.setAvatarPublicId(uploaded.publicId());
+            user.setAvatarUrl(uploaded.secureUrl());
+            userRepository.saveAndFlush(user);
+        });
+        return userMapper.toUserResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse deleteAvatar() {
+        User user = findCurrentUserForUpdate();
+        imageUpdateService.delete(user.getAvatarPublicId(), () -> {
+            user.setAvatarPublicId(null);
+            user.setAvatarUrl(null);
+            userRepository.saveAndFlush(user);
+        });
+        return userMapper.toUserResponse(user);
+    }
+
+    private User findCurrentUserForUpdate() {
+        return userRepository.findByIdForUpdate(currentUserProvider.getCurrentUserId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    }
+
 
 
     @Override

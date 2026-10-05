@@ -359,7 +359,7 @@ class EmailVerificationIntegrationTest {
         users.saveAndFlush(user);
         assertThatThrownBy(() -> auth.refreshToken(new RefreshTokenRequest(login.refreshToken())))
                 .isInstanceOf(AppException.class).extracting("errorCode").isEqualTo(ErrorCode.EMAIL_NOT_VERIFIED);
-        mvc.perform(post("/api/meal/create").header("Authorization", "Bearer " + login.accessToken())
+        mvc.perform(post("/api/meal").header("Authorization", "Bearer " + login.accessToken())
                         .contentType("application/json").content("{}"))
                 .andExpect(status().isUnauthorized());
     }

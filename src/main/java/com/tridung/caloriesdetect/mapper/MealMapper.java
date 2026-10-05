@@ -10,9 +10,12 @@ import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface MealMapper {
+    @Mapping(target = "imagePublicId", ignore = true)
+    @Mapping(target = "imageUrl", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", source = "user")
     Meal toEntity(MealRequest request, User user);
 
     MealResponse toMealResponse(Meal meal);
+
 }

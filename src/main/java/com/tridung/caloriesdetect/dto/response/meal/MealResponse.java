@@ -7,6 +7,7 @@ import java.time.LocalDate;
 public record MealResponse(
     Long id,
     MealType mealType,
-    LocalDate mealDate
+    LocalDate mealDate,
+    String imageUrl
 ) {
 }
