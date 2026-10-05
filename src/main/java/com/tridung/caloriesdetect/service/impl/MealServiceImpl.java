@@ -3,6 +3,12 @@ package com.tridung.caloriesdetect.service.impl;
 import org.springframework.web.multipart.MultipartFile;
 import com.tridung.caloriesdetect.service.ImageUpdateService;
 import com.tridung.caloriesdetect.dto.request.meal.MealRequest;
+import com.tridung.caloriesdetect.dto.request.meal.ConfirmMealAnalysisRequest;
+import com.tridung.caloriesdetect.dto.response.meal.MealAnalysisResponse;
+import com.tridung.caloriesdetect.dto.response.meal.MealDetailsResponse;
+import com.tridung.caloriesdetect.entity.MealItem;
+import com.tridung.caloriesdetect.mapper.MealItemMapper;
+import com.tridung.caloriesdetect.service.MealAnalysisClient;
 import com.tridung.caloriesdetect.dto.response.meal.MealResponse;
 import com.tridung.caloriesdetect.entity.Meal;
 import com.tridung.caloriesdetect.entity.User;
@@ -22,6 +28,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDate;
 
@@ -35,6 +42,35 @@ public class MealServiceImpl implements MealService {
     private final MealMapper mealMapper;
     private final CurrentUserProvider currentUserProvider;
     private final ImageUpdateService imageUpdateService;
+    private final MealAnalysisClient mealAnalysisClient;
+    private final MealItemMapper mealItemMapper;
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public MealAnalysisResponse analyze(Long mealId) {
+        // Resolve ownership first; do not hold a database transaction during the HTTP call.
+        Meal meal = findOwnedMeal(mealId);
+        if (meal.getImageUrl() == null || meal.getImageUrl().isBlank()) {
+            throw new AppException(ErrorCode.MEAL_IMAGE_REQUIRED);
+        }
+        return mealAnalysisClient.analyze(meal.getId(), meal.getImageUrl());
+    }
+
+    @Override
+    @Transactional
+    public MealDetailsResponse confirmAnalysis(Long mealId, ConfirmMealAnalysisRequest request) {
+        Meal meal = findOwnedMealForUpdate(mealId);
+        var confirmed = request.items().stream().map(input -> {
+            MealItem item = new MealItem();
+            mealItemMapper.update(input, item);
+            item.setMeal(meal);
+            return item;
+        }).toList();
+        mealItemRepository.deleteAllByMeal_Id(mealId);
+        mealItemRepository.flush();
+        var saved = mealItemRepository.saveAllAndFlush(confirmed);
+        return mealMapper.toMealDetailsResponse(meal, saved.stream().map(mealItemMapper::toResponse).toList());
+    }
 
     @Override
     @Transactional

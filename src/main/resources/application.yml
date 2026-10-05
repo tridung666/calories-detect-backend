@@ -24,6 +24,10 @@ spring:
   config:
     import: optional:file:.env[.properties]
 
+  jackson:
+    deserialization:
+      accept-float-as-int: false
+
   application:
     name: calories-detect-backend
 
@@ -42,6 +46,10 @@ spring:
     enabled: true
 
 app:
+  ai-service:
+    base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
+    connect-timeout: ${AI_SERVICE_CONNECT_TIMEOUT:3s}
+    response-timeout: ${AI_SERVICE_RESPONSE_TIMEOUT:75s}
   auth:
     secure-cookies: ${AUTH_SECURE_COOKIES:false}
     allowed-origins: ${AUTH_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000}

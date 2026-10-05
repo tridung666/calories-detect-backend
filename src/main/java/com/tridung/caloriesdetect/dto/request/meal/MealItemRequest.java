@@ -7,11 +7,10 @@ import java.math.BigDecimal;
 @Schema(description = "Nutrition values are totals for the supplied quantity, not values per 100 grams")
 public record MealItemRequest(
         @NotBlank @Size(max = 255) String inputName,
-        @Size(max = 255) String normalizedName,
         @NotNull @DecimalMin(value = "0", inclusive = false)
         @Digits(integer = 8, fraction = 2) BigDecimal quantityGrams,
-        @NotNull @PositiveOrZero Integer calories,
-        @NotNull @PositiveOrZero Integer proteinGrams,
-        @NotNull @PositiveOrZero Integer carbohydrateGrams,
-        @NotNull @PositiveOrZero Integer fatGrams
+        @NotNull @DecimalMin("0") @DecimalMax("2147483647") @Digits(integer = 10, fraction = 2) BigDecimal calories,
+        @NotNull @DecimalMin("0") @DecimalMax("2147483647") @Digits(integer = 10, fraction = 2) BigDecimal proteinGrams,
+        @NotNull @DecimalMin("0") @DecimalMax("2147483647") @Digits(integer = 10, fraction = 2) BigDecimal carbohydrateGrams,
+        @NotNull @DecimalMin("0") @DecimalMax("2147483647") @Digits(integer = 10, fraction = 2) BigDecimal fatGrams
 ) {}

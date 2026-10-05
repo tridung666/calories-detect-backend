@@ -3,11 +3,16 @@ package com.tridung.caloriesdetect.service;
 import org.springframework.web.multipart.MultipartFile;
 import com.tridung.caloriesdetect.dto.request.meal.MealRequest;
 import com.tridung.caloriesdetect.dto.response.meal.MealResponse;
+import com.tridung.caloriesdetect.dto.request.meal.ConfirmMealAnalysisRequest;
+import com.tridung.caloriesdetect.dto.response.meal.MealAnalysisResponse;
+import com.tridung.caloriesdetect.dto.response.meal.MealDetailsResponse;
 import com.tridung.caloriesdetect.common.enums.MealType;
 import com.tridung.caloriesdetect.common.response.PageResponse;
 import java.time.LocalDate;
 
 public interface MealService {
+    MealAnalysisResponse analyze(Long mealId);
+    MealDetailsResponse confirmAnalysis(Long mealId, ConfirmMealAnalysisRequest request);
     MealResponse uploadImage(Long mealId, MultipartFile file);
     MealResponse deleteImage(Long mealId);
 

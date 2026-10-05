@@ -37,6 +37,10 @@ public class GlobalExceptionHandler {
 
         int status = switch (errorCode) {
             case MEAL_NOT_FOUND, MEAL_ITEM_NOT_FOUND -> 404;
+            case AI_SERVICE_UNAVAILABLE -> 503;
+            case AI_SERVICE_TIMEOUT -> 504;
+            case INVALID_AI_RESPONSE -> 502;
+            case AI_EMPTY_RESULT, AI_IMAGE_UNREADABLE -> 422;
             case EMAIL_DELIVERY_FAILED, IMAGE_UPLOAD_FAILED, IMAGE_DELETE_FAILED -> 503;
             case IMAGE_TOO_LARGE -> 413;
             case OTP_RATE_LIMITED -> 429;

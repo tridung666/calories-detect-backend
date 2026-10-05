@@ -2,6 +2,9 @@ package com.tridung.caloriesdetect.mapper;
 
 import com.tridung.caloriesdetect.dto.request.meal.MealRequest;
 import com.tridung.caloriesdetect.dto.response.meal.MealResponse;
+import com.tridung.caloriesdetect.dto.response.meal.MealDetailsResponse;
+import com.tridung.caloriesdetect.dto.response.meal.MealItemResponse;
+import java.util.List;
 import com.tridung.caloriesdetect.entity.Meal;
 import com.tridung.caloriesdetect.entity.User;
 import org.mapstruct.Mapper;
@@ -18,4 +21,5 @@ public interface MealMapper {
 
     MealResponse toMealResponse(Meal meal);
 
+    MealDetailsResponse toMealDetailsResponse(Meal meal, List<MealItemResponse> items);
 }

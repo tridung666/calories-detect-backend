@@ -11,6 +11,14 @@ public enum ErrorCode {
     IMAGE_UPLOAD_FAILED(15002, "Unable to upload image. Please try again later"),
     IMAGE_DELETE_FAILED(15003, "Unable to delete image. Please try again later"),
 
+    // AI meal analysis
+    MEAL_IMAGE_REQUIRED(16000, "Upload a meal image before requesting analysis"),
+    AI_SERVICE_UNAVAILABLE(16001, "AI analysis service is unavailable. Please try again later"),
+    AI_SERVICE_TIMEOUT(16002, "AI analysis timed out. Please try again later"),
+    INVALID_AI_RESPONSE(16003, "AI analysis service returned an invalid response"),
+    AI_EMPTY_RESULT(16004, "No food was detected in the meal image"),
+    AI_IMAGE_UNREADABLE(16005, "AI could not read the meal image. Please upload another image"),
+
     // Meal
     MEAL_ITEM_NOT_FOUND(14002, "Meal item not found"),
     MEAL_NOT_FOUND(14000, "Meal not found"),

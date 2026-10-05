@@ -6,10 +6,9 @@ public record MealItemResponse(
         Long id,
         Long mealId,
         String inputName,
-        String normalizedName,
         BigDecimal quantityGrams,
-        Integer calories,
-        Integer proteinGrams,
-        Integer carbohydrateGrams,
-        Integer fatGrams
+        BigDecimal calories,
+        BigDecimal proteinGrams,
+        BigDecimal carbohydrateGrams,
+        BigDecimal fatGrams
 ) {}
