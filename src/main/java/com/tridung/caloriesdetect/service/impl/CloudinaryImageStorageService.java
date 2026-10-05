@@ -20,7 +20,7 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 public class CloudinaryImageStorageService implements ImageStorageService {
-    public static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+    public static final long MAX_IMAGE_SIZE = 10 * 1024 * 1024;
     private static final byte[] PNG_SIGNATURE = {(byte) 137, 80, 78, 71, 13, 10, 26, 10};
     private final Cloudinary cloudinary;
 

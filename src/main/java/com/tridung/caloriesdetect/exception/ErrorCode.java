@@ -7,7 +7,7 @@ public enum ErrorCode {
 
     // Images
     INVALID_IMAGE(15000, "Image must be a non-empty JPEG, PNG or WebP file"),
-    IMAGE_TOO_LARGE(15001, "Image must not exceed 5 MiB"),
+    IMAGE_TOO_LARGE(15001, "Image must not exceed 10 MiB"),
     IMAGE_UPLOAD_FAILED(15002, "Unable to upload image. Please try again later"),
     IMAGE_DELETE_FAILED(15003, "Unable to delete image. Please try again later"),
 
